@@ -3,6 +3,8 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import login
+from marshmallow import Schema, fields
+from marshmallow.validate import Length, Range
 
 
 class User(UserMixin, db.Model):
@@ -48,3 +50,12 @@ class Comment(db.Model):
 
     def __repr__(self):
         return f'Comment: {self.body}'
+
+
+UserSchema = Schema.from_dict(
+    {
+        'username': fields.Str(required=True, validate=Length(min=3, max=60)),
+        'password': fields.Str(required=True, validate=Length(min=8, max=128)),
+        'email': fields.Str(required=True, validate=Length(max=60)),
+    }
+)
