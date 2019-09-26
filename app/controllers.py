@@ -1,36 +1,39 @@
 from flask import jsonify, request
+from flask_restful import Resource
 from marshmallow import ValidationError
 from validate_email import validate_email
-from app import app
-from app import db
+from app import db, api
 from app.models import User, UserSchema, Post
+import app.errors as errors
 
 
-@app.route('/api/<int:page>')
-def blog(page):
-    posts = Post.query.paginate(per_page=10, page=int(page))
-    response = {
-        'posts': [
-            {
-                'body': post.body,
-                'username': post.author.username,
-                'timestamp': post.timestamp
-            } for post in posts.items
-        ],
-        'pages': posts.pages
-    }
-    return jsonify(response)
+class Posts(Resource):
+    def get(self, page_size, page_number):
+        posts = Post.query.paginate(per_page=int(page_size), page=int(page_number))
+        response = {
+            'posts': [
+                {
+                    'body': post.body,
+                    'username': post.author.username,
+                    'timestamp': post.timestamp
+                } for post in posts.items
+            ],
+            'pages': posts.pages
+        }
+        return jsonify(response)
 
 
-@app.route('/api/registration/account', methods=['POST'])
-def account():
-    if request.method == 'POST':
+api.add_resource(Posts, '/api/posts/<int:page_size>/<int:page_number>')
+
+
+class Registration(Resource):
+    def post(self):
         data = request.get_json()
         try:
             UserSchema().load(data)
         except ValidationError as vall_err:
-            print(vall_err)
-            return 'Invalid input data'
+            payload = {'invalid': vall_err.messages}
+            raise errors.BadRequest('Bad request', 400, payload)
         else:
             username = data.get('username')
             email = data.get('email')
@@ -58,3 +61,6 @@ def account():
                     'allowed': True
                 }
             })
+
+
+api.add_resource(Registration, '/api/registration/account')

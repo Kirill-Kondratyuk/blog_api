@@ -16,10 +16,12 @@ def create_users(amount: int):
     for user in users:
         db.session.add(user)
         db.session.commit()
+    return users
 
 
 def create_posts(amount: int):
     users = User.query.all()
+    posts = []
     for i in range(0, amount, 1):
         for user in users:
             body = ''
@@ -28,11 +30,14 @@ def create_posts(amount: int):
             post = Post(body=body, user_id=user.id)
             db.session.add(post)
             db.session.commit()
+            posts.append(post)
+    return posts
 
 
 def create_comments(amount):
     users = User.query.all()
     posts = Post.query.all()
+    comments = []
     for i in range(0, amount, 1):
         body = ''
         for j in range(0, 3, 1):
@@ -40,4 +45,6 @@ def create_comments(amount):
         comment = Comment(body=body, user_id=random.choice(users).id, post_id=random.choice(posts).id)
         db.session.add(comment)
         db.session.commit()
+        comments.append(comment)
+    return comments
 
