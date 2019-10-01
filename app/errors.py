@@ -20,7 +20,5 @@ class BadRequest(Exception):
 
 @app.errorhandler(BadRequest)
 def handle_bad_request(error):
-    response = Response()
-    response.response = jsonify(error.to_dict())
-    response.status_code = error.status_code
+    response = Response(response=jsonify(error.to_dict()), status=error.status_code)
     return response

@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import login
 from marshmallow import Schema, fields
-from marshmallow.validate import Length, Range
+from marshmallow.validate import Length
 
 
 class User(UserMixin, db.Model):
@@ -15,11 +15,36 @@ class User(UserMixin, db.Model):
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='user', lazy='dynamic')
 
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        posts = self.posts.all()
+        for post in posts:
+            comments = post.comments.all()
+            for comment in comments:
+                db.session.delete(comment)
+            db.session.delete(post)
+        comments = self.comments.all()
+        for comment in comments:
+            db.session.delete(comment)
+        db.session.delete(self)
+        db.session.commit()
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @classmethod
+    def find_by_username(cls, username):
+        return cls.query.filter_by(username=username).first()
+
+    @classmethod
+    def find_by_email(cls, email):
+        return cls.query.filter_by(email=email).first()
 
     def __repr__(self):
         return f'<User: {self.username}. Email: {self.email}. Id: {self.id}>'
@@ -36,6 +61,18 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        comments = self.comments.all()
+        for comment in comments:
+            db.session.delete(comment)
+            db.session.commit()
+        db.session.delete(self)
+        db.session.commit()
 
     def __repr__(self):
         return f'<Post: {self.body}. Date: {self.timestamp}>'
@@ -59,3 +96,17 @@ UserSchema = Schema.from_dict(
         'email': fields.Str(required=True, validate=Length(max=60)),
     }
 )
+
+
+class RevokedToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(120))
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @classmethod
+    def is_jti_blacklisted(cls, jti):
+        query = cls.query.filter_by(jti=jti).first()
+        return bool(query)
