@@ -59,9 +59,30 @@ class UserRegistration(Resource):
             user = User(username=username, email=email)
             user.set_password(password)
             user.save_to_db()
-            message['access_token'] = create_access_token(identity=username)
-            message['refresh_token'] = create_refresh_token(identity=username)
             return make_response(jsonify(message), 201)
+
+
+class UserLogin(Resource):
+    def post(self):
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        user = User.find_by_email(email)
+        if not user:
+            return {'message': 'invalid data has been entered'}, 400
+        if user.check_password(password):
+            return {'access_token': create_access_token(identity=user.username),
+                    'refresh_token': create_refresh_token(identity=user.username)}
+
+    def delete(self):
+        current_user = get_jwt_identity()
+
+
+class SecretInfo(Resource):
+    @jwt_required
+    def get(self):
+        current_user = get_jwt_identity()
+        return {'Logged in as ': current_user}
 
 
 class TokenRefresh(Resource):

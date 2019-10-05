@@ -22,8 +22,10 @@ jwt = JWTManager(app)
 from app import resources, models
 from tests import actions
 
-api.add_resource(resources.UserRegistration, '/api/registration/account')
+api.add_resource(resources.UserRegistration, '/api/auth/account')
 api.add_resource(resources.Posts, '/api/posts/<int:page_size>/<int:page_number>')
+api.add_resource(resources.SecretInfo, '/api/secret_info')
+api.add_resource(resources.UserLogin, '/api/auth/login')
 
 
 @jwt.token_in_blacklist_loader
