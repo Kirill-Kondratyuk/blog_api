@@ -26,6 +26,8 @@ api.add_resource(resources.UserRegistration, '/api/auth/account')
 api.add_resource(resources.Posts, '/api/posts/<int:page_size>/<int:page_number>')
 api.add_resource(resources.SecretInfo, '/api/secret_info')
 api.add_resource(resources.UserLogin, '/api/auth/login')
+api.add_resource(resources.UserLogoutAccess, '/api/auth/logout/access')
+api.add_resource(resources.UserLogoutRefresh, '/api/auth/logout/refresh')
 
 
 @jwt.token_in_blacklist_loader

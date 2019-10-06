@@ -1,13 +1,13 @@
 from flask import jsonify, request
 from app import app, db
-from app.models import User, Post, Comment
+from app.models import UserModel, PostModel, CommentModel
 from .test_data.fills import create_users, create_comments, create_posts
 
 
 @app.route('/test/comments', methods=['GET', 'DELETE', 'POST'])
 def _comments():
     if request.method == 'GET':
-        comments = Comment.query.all()
+        comments = CommentModel.query.all()
         return jsonify({
             'comments': [
                 {
@@ -20,7 +20,7 @@ def _comments():
             ]
         })
     elif request.method == 'DELETE':
-        comments = Comment.query.all()
+        comments = CommentModel.query.all()
         for comment in comments:
             db.session.delete(comment)
         db.session.commit()
@@ -43,7 +43,7 @@ def _comments():
 @app.route('/test/posts', methods=['GET', 'DELETE', 'POST'])
 def _posts():
     if request.method == 'GET':
-        posts = Post.query.all()
+        posts = PostModel.query.all()
         return jsonify({
             'posts': [
                 {
@@ -55,7 +55,7 @@ def _posts():
             ]
         })
     elif request.method == 'DELETE':
-        posts = Post.query.all()
+        posts = PostModel.query.all()
         for post in posts:
             db.session.delete(post)
         db.session.commit()
@@ -77,7 +77,7 @@ def _posts():
 @app.route('/test/users', methods=['GET', 'DELETE', 'POST'])
 def _users():
     if request.method == 'GET':
-        users = User.query.all()
+        users = UserModel.query.all()
         return jsonify({
             'users': [
                 {
@@ -89,7 +89,7 @@ def _users():
             ]
         })
     elif request.method == 'DELETE':
-        users = User.query.all()
+        users = UserModel.query.all()
         for user in users:
             db.session.delete(user)
         db.session.commit()

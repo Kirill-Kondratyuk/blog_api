@@ -3,7 +3,7 @@ import random
 
 
 from app import db
-from app.models import User, Post, Comment
+from app.models import UserModel, PostModel, CommentModel
 
 
 def rand_str(length: int):
@@ -12,7 +12,7 @@ def rand_str(length: int):
 
 
 def create_users(amount: int):
-    users = [User(username=rand_str(20), email=rand_str(8)) for i in range(0, amount, 1)]
+    users = [UserModel(username=rand_str(20), email=rand_str(8)) for i in range(0, amount, 1)]
     for user in users:
         db.session.add(user)
         db.session.commit()
@@ -20,14 +20,14 @@ def create_users(amount: int):
 
 
 def create_posts(amount: int):
-    users = User.query.all()
+    users = UserModel.query.all()
     posts = []
     for i in range(0, amount, 1):
         for user in users:
             body = ''
             for j in range(0, 10, 1):
                 body += rand_str(5)+' '
-            post = Post(body=body, user_id=user.id)
+            post = PostModel(body=body, user_id=user.id)
             db.session.add(post)
             db.session.commit()
             posts.append(post)
@@ -35,14 +35,14 @@ def create_posts(amount: int):
 
 
 def create_comments(amount):
-    users = User.query.all()
-    posts = Post.query.all()
+    users = UserModel.query.all()
+    posts = PostModel.query.all()
     comments = []
     for i in range(0, amount, 1):
         body = ''
         for j in range(0, 3, 1):
             body += rand_str(10) + ' '
-        comment = Comment(body=body, user_id=random.choice(users).id, post_id=random.choice(posts).id)
+        comment = CommentModel(body=body, user_id=random.choice(users).id, post_id=random.choice(posts).id)
         db.session.add(comment)
         db.session.commit()
         comments.append(comment)

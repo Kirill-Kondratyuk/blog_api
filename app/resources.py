@@ -3,20 +3,15 @@ from flask_restful import Resource, reqparse
 from marshmallow import ValidationError
 from validate_email import validate_email
 from app import db
-from app.models import User, UserSchema, Post, RevokedToken
+from app.models import UserModel, UserSchema, PostModel, RevokedToken
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 
-registration_parser = reqparse.RequestParser()
-registration_parser.add_argument('username', help='This field cannot be blank', required=True)
-registration_parser.add_argument('email', help='This field cannot be blank', required=True)
-registration_parser.add_argument('password', help='This field cannot be blank', required=True)
-
 
 class Posts(Resource):
     def get(self, page_size, page_number):
-        posts = Post.query.paginate(per_page=int(page_size), page=int(page_number))
+        posts = PostModel.query.paginate(per_page=int(page_size), page=int(page_number))
         response = {
             'posts': [
                 {
@@ -35,17 +30,17 @@ class UserRegistration(Resource):
         message = {
             'errors': {}
         }
-        data = registration_parser.parse_args()
+        data = request.get_json()
         email = data.get('email')
         username = data.get('username')
         password = data.get('password')
-        username_valid = False if User.find_by_username(username) else True
-        email_valid = False if User.find_by_email(email) else True
+        username_valid = False if UserModel.find_by_username(username) else True
+        email_valid = False if UserModel.find_by_email(email) else True
         email_exists = True if validate_email(email, check_mx=True) else False
         if not username_valid:
-            message['errors']['UsernameExistsError'] = 'User with such username already exists'
+            message['errors']['UsernameExistsError'] = 'UserModel with such username already exists'
         if not email_valid:
-            message['errors']['UserWithSuchEmailExists'] = 'User with such email already exists'
+            message['errors']['UserWithSuchEmailExists'] = 'UserModel with such email already exists'
         if not email_exists:
             message['errors']['EmailDoesNotExistError'] = 'Entered email does not exist'
         try:
@@ -56,26 +51,27 @@ class UserRegistration(Resource):
         else:
             if message['errors']:
                 return make_response(jsonify(message), 400)
-            user = User(username=username, email=email)
+            user = UserModel(username=username, email=email)
             user.set_password(password)
             user.save_to_db()
             return make_response(jsonify(message), 201)
 
 
 class UserLogin(Resource):
+    def get(self):
+        current_user = get_jwt_identity()
+        return {'username': current_user}, 200
+
     def post(self):
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
-        user = User.find_by_email(email)
+        user = UserModel.find_by_email(email)
         if not user:
             return {'message': 'invalid data has been entered'}, 400
         if user.check_password(password):
             return {'access_token': create_access_token(identity=user.username),
                     'refresh_token': create_refresh_token(identity=user.username)}
-
-    def delete(self):
-        current_user = get_jwt_identity()
 
 
 class SecretInfo(Resource):

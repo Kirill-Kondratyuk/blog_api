@@ -7,13 +7,13 @@ from marshmallow import Schema, fields
 from marshmallow.validate import Length
 
 
-class User(UserMixin, db.Model):
+class UserModel(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(60), unique=True)
     email = db.Column(db.String(60), unique=True)
     password_hash = db.Column(db.String(128))
-    posts = db.relationship('Post', backref='author', lazy='dynamic')
-    comments = db.relationship('Comment', backref='user', lazy='dynamic')
+    posts = db.relationship('PostModel', backref='author', lazy='dynamic')
+    comments = db.relationship('CommentModel', backref='user', lazy='dynamic')
 
     def save_to_db(self):
         db.session.add(self)
@@ -52,15 +52,15 @@ class User(UserMixin, db.Model):
 
 @login.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return UserModel.query.get(int(user_id))
 
 
-class Post(db.Model):
+class PostModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    comments = db.relationship('CommentModel', backref='post', lazy='dynamic')
 
     def save_to_db(self):
         db.session.add(self)
@@ -75,10 +75,10 @@ class Post(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return f'<Post: {self.body}. Date: {self.timestamp}>'
+        return f'<PostModel: {self.body}. Date: {self.timestamp}>'
 
 
-class Comment(db.Model):
+class CommentModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -86,7 +86,7 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
 
     def __repr__(self):
-        return f'Comment: {self.body}'
+        return f'CommentModel: {self.body}'
 
 
 UserSchema = Schema.from_dict(
