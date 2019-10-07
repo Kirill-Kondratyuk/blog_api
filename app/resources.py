@@ -68,9 +68,10 @@ class UserLogin(Resource):
         password = data.get('password')
         user = UserModel.find_by_email(email)
         if not user:
-            return {'message': 'invalid data has been entered'}, 400
+            return {'UserDoesNotExistError': 'invalid data has been entered'}, 400
         if user.check_password(password):
-            return {'access_token': create_access_token(identity=user.username),
+            return {'username': user.username,
+                    'access_token': create_access_token(identity=user.username),
                     'refresh_token': create_refresh_token(identity=user.username)}
 
 
@@ -80,6 +81,8 @@ class SecretInfo(Resource):
         current_user = get_jwt_identity()
         return {'Logged in as ': current_user}
 
+
+# TODO design refresh-access jwt logic
 
 class TokenRefresh(Resource):
     @jwt_refresh_token_required

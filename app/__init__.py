@@ -10,7 +10,9 @@ from flask_jwt_extended import JWTManager
 
 app = Flask(__name__)
 api = Api(app, catch_all_404s=True)
-CORS(app, resources=r"/*", allow_credentials=True, expose_headers="*", allow_headers='Content-Type', origins="*")
+CORS(app, resources=r"/*", allow_credentials=True, expose_headers="*",
+     allow_headers=['Content-Type', 'Authorization'],
+     origins="*")
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)

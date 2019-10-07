@@ -59,7 +59,7 @@ class PostModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'))
     comments = db.relationship('CommentModel', backref='post', lazy='dynamic')
 
     def save_to_db(self):
@@ -82,8 +82,8 @@ class CommentModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('post_model.id'))
 
     def __repr__(self):
         return f'CommentModel: {self.body}'
