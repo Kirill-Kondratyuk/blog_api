@@ -1,33 +1,36 @@
-from flask import jsonify, request, make_response
-from flask_restful import Resource, reqparse
+from flask import jsonify, request, make_response, Blueprint
+from flask_restful import Resource
 from marshmallow import ValidationError
 from validate_email import validate_email
 from app.models import UserModel, UserSchema, PostModel, RevokedToken
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
+from app import app
+
+auth = Blueprint('auth', __name__, url_prefix='/api/auth')
+blog = Blueprint('blog', __name__, url_prefix='/api/blog')
 
 
+@blog.route('/posts/<int:page_size>/<int:page_number>', methods=['GET'])
+def post_page(page_size, page_number):
+    posts = PostModel.query.paginate(per_page=int(page_size), page=int(page_number))
+    response = {
+        'posts': [
+            {
+                'body': post.body,
+                'username': post.author.username,
+                'timestamp': post.timestamp
+            } for post in posts.items
+        ],
+        'pages': posts.pages
+    }
+    return jsonify(response)
 
 
-class Posts(Resource):
-    def get(self, page_size, page_number):
-        posts = PostModel.query.paginate(per_page=int(page_size), page=int(page_number))
-        response = {
-            'posts': [
-                {
-                    'body': post.body,
-                    'username': post.author.username,
-                    'timestamp': post.timestamp
-                } for post in posts.items
-            ],
-            'pages': posts.pages
-        }
-        return jsonify(response)
-
-
-class UserRegistration(Resource):
-    def post(self):
+@auth.route('/account', methods=['POST', 'GET', 'PUT', 'DELETE'])
+def user_account():
+    if request.method == 'POST':
         message = {
             'errors': {}
         }
@@ -58,44 +61,39 @@ class UserRegistration(Resource):
             return make_response(jsonify(message), 201)
 
 
-class UserLogin(Resource):
-    def get(self):
+@auth.route('/login', methods=['POST', 'GET'])
+def user_login():
+    if request.method == 'GET':
         current_user = get_jwt_identity()
-        return {'username': current_user}, 200
-
-    def post(self):
+        return make_response({'username': current_user}, 200)
+    elif request.method == 'POST':
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
         user = UserModel.find_by_email(email)
         if not user:
-            return {'UserDoesNotExistError': 'invalid data has been entered'}, 400
+            return make_response({'message': 'invalid data has been entered'}, 400)
         if user.check_password(password):
-            return {'username': user.username,
-                    'access_token': create_access_token(identity=user.username),
-                    'refresh_token': create_refresh_token(identity=user.username)}
+            return make_response({'username': user.username,
+                                  'access_token': create_access_token(identity=user.username),
+                                  'refresh_token': create_refresh_token(identity=user.username)})
+        else:
+            return make_response({'message': 'invalid data has been entered'}, 400)
 
 
-class SecretInfo(Resource):
-    @jwt_required
-    def get(self):
-        current_user = get_jwt_identity()
-        return {'Logged in as ': current_user}
-
-
-# TODO design refresh-access jwt logic
-
-class TokenRefresh(Resource):
-    @jwt_refresh_token_required
-    def post(self):
+@auth.route('/refresh_token', methods=['POST'])
+@jwt_refresh_token_required
+def token_refresh():
+    if request.method == 'POST':
         current_user = get_jwt_identity()
         access_token = create_access_token(identity=current_user)
-        return {'access_token': access_token}
+        return make_response({'access_token': access_token})
 
 
-class UserLogoutAccess(Resource):
-    @jwt_required
-    def post(self):
+@auth.route('/logout/access', methods=['POST'])
+@jwt_required
+def user_logout_access():
+    if request.method == 'POST':
         jti = get_raw_jwt()['jti']
         try:
             revoked_token = RevokedToken(jti=jti)
@@ -105,9 +103,10 @@ class UserLogoutAccess(Resource):
             return {'message': 'Something went wrong'}, 500
 
 
-class UserLogoutRefresh(Resource):
-    @jwt_refresh_token_required
-    def post(self):
+@auth.route('/logout/refresh', methods=['POST'])
+@jwt_refresh_token_required
+def user_logout_refresh():
+    if request.method == 'POST':
         jti = get_raw_jwt()['jti']
         try:
             revoked_token = RevokedToken(jti=jti)

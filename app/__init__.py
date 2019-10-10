@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Blueprint
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -10,10 +10,10 @@ from flask_jwt_extended import JWTManager
 
 
 app = Flask(__name__)
-api = Api(app, catch_all_404s=True)
-CORS(app, resources=r"/*", allow_credentials=True, expose_headers="*",
+
+CORS(app, resources=r'/*', allow_credentials=True, expose_headers='*',
      allow_headers=['Content-Type', 'Authorization'],
-     origins="*")
+     origins='*')
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -25,13 +25,8 @@ jwt = JWTManager(app)
 from app import resources, models
 from tests import actions
 
-
-api.add_resource(resources.UserRegistration, '/api/auth/account')
-api.add_resource(resources.Posts, '/api/posts/<int:page_size>/<int:page_number>')
-api.add_resource(resources.SecretInfo, '/api/secret_info')
-api.add_resource(resources.UserLogin, '/api/auth/login')
-api.add_resource(resources.UserLogoutAccess, '/api/auth/logout/access')
-api.add_resource(resources.UserLogoutRefresh, '/api/auth/logout/refresh')
+app.register_blueprint(resources.blog)
+app.register_blueprint(resources.auth)
 
 
 @jwt.token_in_blacklist_loader
@@ -52,10 +47,9 @@ def expired_token_callback(expired_token):
 
 @jwt.invalid_token_loader
 def invalid_token_callback(invalid_token):
-    token_type = invalid_token['type']
-    return jsonify({'message': 'The {} token is invalid'.format(token_type)}), 401
+    return jsonify({'message': 'The token is invalid'+invalid_token}), 401
 
 
 @jwt.unauthorized_loader
-def unauthorized_user_callback():
+def unauthorized_user_callback(callback):
     return jsonify({'message': 'Authorization failed'}), 401
