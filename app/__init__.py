@@ -5,28 +5,40 @@ from flask_migrate import Migrate
 from config import Config
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
-from flask_restful import Api
 from flask_jwt_extended import JWTManager
-
+from flask_restful import Api
 
 app = Flask(__name__)
 
-CORS(app, resources=r'/*', allow_credentials=True, expose_headers='*',
-     allow_headers=['Content-Type', 'Authorization'],
-     origins='*')
+cors = CORS(app, resources=r'/*', allow_credentials=True, expose_headers='*',
+            allow_headers=['Content-Type', 'Authorization'],
+            origins='*')
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 migrate = Migrate(app, db)
 login = LoginManager(app)
-jwt = JWTManager(app)
+jwt = JWTManager()
+jwt.init_app(app)
 
+auth = Blueprint('auth', __name__, url_prefix='/api/auth')
+blog = Blueprint('blog', __name__, url_prefix='/api/blog')
+
+auth_api = Api(auth)
+blog_api = Api(blog)
 
 from app import resources, models
 from tests import actions
 
-app.register_blueprint(resources.blog)
-app.register_blueprint(resources.auth)
+blog_api.add_resource(resources.PostPage, '/posts/<int:page_size>/<int:page_number>')
+auth_api.add_resource(resources.UserAccount, '/account')
+auth_api.add_resource(resources.UserLogin, '/login')
+auth_api.add_resource(resources.RefreshToken, '/refresh_token')
+auth_api.add_resource(resources.AccessLogout, '/logout/access')
+auth_api.add_resource(resources.RefreshLogout, '/logout/refresh')
+
+app.register_blueprint(auth)
+app.register_blueprint(blog)
 
 
 @jwt.token_in_blacklist_loader

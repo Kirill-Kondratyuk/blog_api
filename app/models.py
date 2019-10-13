@@ -57,6 +57,7 @@ def load_user(user_id):
 
 class PostModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String())
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'))

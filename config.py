@@ -6,3 +6,5 @@ class Config(object):
     JWT_SECRET_KEY = 'jwt-secret-string'
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
+    PROPAGATE_EXCEPTIONS = True
+    JWT_ACCESS_TOKEN_EXPIRES = 10
