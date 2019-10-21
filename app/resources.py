@@ -2,7 +2,7 @@ from flask import jsonify, request, make_response, Blueprint
 from flask_restful import Resource
 from marshmallow import ValidationError
 from validate_email import validate_email
-from app.models import UserModel, UserSchema, PostModel, RevokedToken
+from app.models import UserModel, UserSchema, PostModel, PostSchema, RevokedToken
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
@@ -95,6 +95,23 @@ class UserLogin(Resource):
                                   'refresh_token': create_refresh_token(identity=user.username)})
         else:
             return make_response({'message': 'invalid data has been entered'}, 400)
+
+
+class Post(Resource):
+    @jwt_required
+    def post(self):
+        current_user = get_jwt_identity()
+        payload = request.get_json()
+        body = payload.get('body')
+        title = payload.get('title')
+        try:
+            PostSchema.load(payload)
+        except ValidationError as vall_err:
+            return {'message': vall_err}, 400
+        user = UserModel.find_by_username(current_user)
+        post = PostModel(title=title, body=body, user_id=user.id)
+        post.save_to_db()
+        return {'message': 'Your post was successfully saved'}
 
 
 class RefreshToken(Resource):

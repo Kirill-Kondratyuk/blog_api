@@ -97,6 +97,12 @@ UserSchema = Schema.from_dict(
         'email': fields.Str(required=True, validate=Length(max=60)),
     }
 )
+PostSchema = Schema.from_dict(
+    {
+        'title': fields.Str(required=True, validate=Length(min=3, max=40))
+        'body': fields.Str(required=True)
+    }
+)
 
 
 class RevokedToken(db.Model):
