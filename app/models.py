@@ -99,7 +99,7 @@ UserSchema = Schema.from_dict(
 )
 PostSchema = Schema.from_dict(
     {
-        'title': fields.Str(required=True, validate=Length(min=3, max=40))
+        'title': fields.Str(required=True, validate=Length(min=3, max=40)),
         'body': fields.Str(required=True)
     }
 )

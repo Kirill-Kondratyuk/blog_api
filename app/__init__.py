@@ -31,6 +31,8 @@ from app import resources, models
 from tests import actions
 
 blog_api.add_resource(resources.PostPage, '/posts/<int:page_size>/<int:page_number>')
+blog_api.add_resource(resources.Post, '/post')
+
 auth_api.add_resource(resources.UserAccount, '/account')
 auth_api.add_resource(resources.UserLogin, '/login')
 auth_api.add_resource(resources.RefreshToken, '/refresh_token')
@@ -65,3 +67,4 @@ def invalid_token_callback(invalid_token):
 @jwt.unauthorized_loader
 def unauthorized_user_callback(callback):
     return jsonify({'message': 'Authorization failed'}), 401
+
