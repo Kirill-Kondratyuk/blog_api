@@ -10,17 +10,20 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
 
 class PostPage(Resource):
     def get(self, page_size, page_number):
-        posts = PostModel.query.paginate(per_page=int(page_size), page=int(page_number))
+        posts = PostModel.query.order_by(PostModel.timestamp.desc()).paginate(per_page=int(page_size),
+                                                                              page=int(page_number))
         response = {
             'posts': [
                 {
                     'body': post.body,
                     'username': post.author.username,
-                    'timestamp': post.timestamp
+                    'timestamp': post.timestamp.__str__(),
+                    'post_preview': post.body if len(post.body) < 80 else post.body[0:250]+'...'
                 } for post in posts.items
             ],
             'pages': posts.pages
         }
+        print(posts.pages)
         return response, 200
 
 
@@ -104,8 +107,9 @@ class Post(Resource):
         payload = request.get_json()
         body = payload.get('body')
         title = payload.get('title')
+        print(payload)
         try:
-            PostSchema.load(payload)
+            PostSchema().load(payload)
         except ValidationError as vall_err:
             return {'message': vall_err}, 400
         user = UserModel.find_by_username(current_user)
@@ -144,3 +148,16 @@ class RefreshLogout(Resource):
             return {'message': 'Refresh token has been revoked'}
         except:
             return {'message': 'Something went wrong'}, 500
+
+
+class Follower(Resource):
+    @jwt_required
+    def post(self):
+        current_user = get_jwt_identity()
+        user = UserModel.query.filter_by(username=current_user).first()
+        if user is None:
+            return {'message': 'User not found'}, 401
+        if user.username == current_user:
+            return {'message': 'You cannot follow to yourself'}, 400
+
+        return {'message': 'Successfully assigned'}

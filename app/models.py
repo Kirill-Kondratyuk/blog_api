@@ -7,6 +7,12 @@ from marshmallow import Schema, fields
 from marshmallow.validate import Length
 
 
+followers = db.Table('followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user_model.id')),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user_model.id'))
+)
+
+
 class UserModel(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(60), unique=True)
@@ -14,6 +20,30 @@ class UserModel(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     posts = db.relationship('PostModel', backref='author', lazy='dynamic')
     comments = db.relationship('CommentModel', backref='user', lazy='dynamic')
+    followed = db.relationship(
+        'UserModel', secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.append(user)
+            db.session.commit()
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.followed.remove(user)
+
+    def is_following(self, user):
+        return self.followed.filter(
+            followers.c.followed_id == user.id).count() > 0
+
+    def followed_posts(self):
+        return PostModel.query.join(
+            followers, (followers.c.followed_id == PostModel.user_id)).filter(
+            followers.c.follower_id == self.id).order_by(
+            PostModel.timestamp.desc())
 
     def save_to_db(self):
         db.session.add(self)
@@ -57,7 +87,7 @@ def load_user(user_id):
 
 class PostModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String())
+    title = db.Column(db.String)
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'))
