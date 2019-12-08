@@ -32,6 +32,8 @@ from tests import actions
 
 blog_api.add_resource(resources.PostPage, '/posts/<int:page_size>/<int:page_number>')
 blog_api.add_resource(resources.Post, '/post')
+blog_api.add_resource(resources.Comment, '/comment')
+
 
 auth_api.add_resource(resources.UserAccount, '/account')
 auth_api.add_resource(resources.UserLogin, '/login')

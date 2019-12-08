@@ -2,29 +2,11 @@ from flask import jsonify, request, make_response, Blueprint
 from flask_restful import Resource
 from marshmallow import ValidationError
 from validate_email import validate_email
-from app.models import UserModel, UserSchema, PostModel, PostSchema, RevokedToken
+from app.models import UserModel, CommentModel, UserSchema, PostModel, PostSchema, RevokedToken
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
-
-
-class PostPage(Resource):
-    def get(self, page_size, page_number):
-        posts = PostModel.query.order_by(PostModel.timestamp.desc()).paginate(per_page=int(page_size),
-                                                                              page=int(page_number))
-        response = {
-            'posts': [
-                {
-                    'body': post.body,
-                    'username': post.author.username,
-                    'timestamp': post.timestamp.__str__(),
-                    'post_preview': post.body if len(post.body) < 80 else post.body[0:250]+'...'
-                } for post in posts.items
-            ],
-            'pages': posts.pages
-        }
-        print(posts.pages)
-        return response, 200
+import json
 
 
 class UserAccount(Resource):
@@ -100,6 +82,23 @@ class UserLogin(Resource):
             return make_response({'message': 'invalid data has been entered'}, 400)
 
 
+class PostPage(Resource):
+    def get(self, page_size, page_number):
+        posts = PostModel.query.order_by(PostModel.timestamp.desc()).paginate(per_page=int(page_size),
+                                                                              page=int(page_number))
+        response = {
+            'posts': [
+                {'id': post.id,
+                 'username': post.author.username,
+                 'timestamp': post.timestamp.__str__(),
+                 'post_preview': post.body if len(post.body) < 80 else post.body[0:250] + '...'
+                 } for post in posts.items
+            ],
+            'pages': posts.pages
+        }
+        return response, 200
+
+
 class Post(Resource):
     @jwt_required
     def post(self):
@@ -107,7 +106,6 @@ class Post(Resource):
         payload = request.get_json()
         body = payload.get('body')
         title = payload.get('title')
-        print(payload)
         try:
             PostSchema().load(payload)
         except ValidationError as vall_err:
@@ -116,6 +114,42 @@ class Post(Resource):
         post = PostModel(title=title, body=body, user_id=user.id)
         post.save_to_db()
         return {'message': 'Your post was successfully saved'}
+
+    def get(self):
+        post_id = request.args['id']
+        post = PostModel.query.get(int(post_id))
+        if not post:
+            return {'message': 'Post does not exists'}, 404
+        comments = []
+        for comment in post.comments:
+            comments.append({
+                'author': comment.user.username,
+                'timestamp': comment.timestamp.__str__(),
+                'body': comment.body
+            })
+        return {
+            'username': post.author.username,
+            'body': post.body,
+            'id:': post.id,
+            'comments': comments,
+            'timestamp': post.timestamp.__str__()
+        }
+
+
+class Comment(Resource):
+    @jwt_required
+    def post(self):
+        data = request.get_json()
+        body = data.get('body')
+        post_id = data.get('post_id')
+        current_user = get_jwt_identity()
+        user = UserModel.find_by_username(current_user)
+        comment = CommentModel(body=body, user_id=user.id, post_id=post_id)
+        comment.save_to_db()
+        return {'body': comment.body,
+                'author': user.username,
+                'timestamp': comment.timestamp.__str__()
+                }, 201
 
 
 class RefreshToken(Resource):

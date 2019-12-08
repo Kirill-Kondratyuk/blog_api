@@ -119,6 +119,9 @@ class CommentModel(db.Model):
     def __repr__(self):
         return f'CommentModel: {self.body}'
 
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
 
 UserSchema = Schema.from_dict(
     {
