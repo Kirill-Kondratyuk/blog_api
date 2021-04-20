@@ -23,7 +23,7 @@ packaging==19.2
 pkg-resources==0.0.0
 pluggy==0.13.0
 psycopg2==2.8.3
-py==1.8.0
+py==1.10.0
 py3dns==3.2.1
 PyJWT==1.7.1
 pyparsing==2.4.2
